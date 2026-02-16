@@ -2,218 +2,43 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import { z } from 'zod';
+import { authenticateSocket, requireAuth, signToken } from './auth.js';
+import { logActivity } from './activity.js';
+import { clientOrigin, port } from './config.js';
 import { pool } from './db.js';
-
-type BoardRole = 'owner' | 'member' | 'viewer';
-
-type JwtPayload = {
-  sub: number;
-  email: string;
-  name: string;
-};
-
-type AuthUser = {
-  id: number;
-  email: string;
-  name: string;
-};
-
-type AuthRequest = express.Request & {
-  user?: AuthUser;
-};
+import { canWrite, getBoardRole, getCardWithBoard, normalizeDueDate, resolveBoardAssigneeName } from './helpers.js';
+import { createPresenceManager } from './presence.js';
+import {
+  addCommentSchema,
+  addMemberSchema,
+  createBoardSchema,
+  createCardSchema,
+  createColumnSchema,
+  loginSchema,
+  moveCardSchema,
+  registerSchema,
+  updateCardSchema,
+  updateColumnSchema
+} from './schemas.js';
+import type { AuthRequest, AuthUser } from './types.js';
 
 const app = express();
 const httpServer = createServer(app);
-
-const port = Number(process.env.PORT ?? 4000);
-const clientOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
-const jwtSecret: string = process.env.JWT_SECRET ?? '';
-
-if (!jwtSecret) {
-  throw new Error('JWT_SECRET is required');
-}
 
 const io = new Server(httpServer, {
   cors: {
     origin: clientOrigin
   }
 });
-const boardPresence = new Map<number, Map<number, number>>();
+const presence = createPresenceManager(io);
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json());
 
-function signToken(user: AuthUser): string {
-  return jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      name: user.name
-    },
-    jwtSecret,
-    { expiresIn: '7d' }
-  );
-}
-
-function parseAuthHeader(headerValue?: string): string | null {
-  if (!headerValue) {
-    return null;
-  }
-
-  const [type, token] = headerValue.split(' ');
-  if (type?.toLowerCase() !== 'bearer' || !token) {
-    return null;
-  }
-
-  return token;
-}
-
-function verifyToken(token: string): AuthUser {
-  const decoded = jwt.verify(token, jwtSecret) as jwt.JwtPayload | string;
-  if (typeof decoded === 'string' || typeof decoded.sub !== 'number' || typeof decoded.email !== 'string' || typeof decoded.name !== 'string') {
-    throw new Error('Invalid token payload');
-  }
-
-  return {
-    id: decoded.sub,
-    email: decoded.email,
-    name: decoded.name
-  };
-}
-
-async function getBoardRole(userId: number, boardId: number): Promise<BoardRole | null> {
-  const result = await pool.query('SELECT role FROM board_members WHERE board_id = $1 AND user_id = $2', [boardId, userId]);
-  if (result.rowCount === 0) {
-    return null;
-  }
-
-  return result.rows[0].role as BoardRole;
-}
-
-async function getCardWithBoard(cardId: number): Promise<{ id: number; board_id: number; title: string } | null> {
-  const result = await pool.query('SELECT id, board_id, title FROM cards WHERE id = $1', [cardId]);
-  if (result.rowCount === 0) {
-    return null;
-  }
-
-  return result.rows[0] as { id: number; board_id: number; title: string };
-}
-
-async function logActivity(params: {
-  boardId: number;
-  actorUserId: number;
-  entityType: string;
-  entityId: number | null;
-  action: string;
-  message: string;
-  metadata?: Record<string, unknown>;
-}) {
-  await pool.query(
-    `INSERT INTO activities(board_id, actor_user_id, entity_type, entity_id, action, message, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
-    [
-      params.boardId,
-      params.actorUserId,
-      params.entityType,
-      params.entityId,
-      params.action,
-      params.message,
-      JSON.stringify(params.metadata ?? {})
-    ]
-  );
-}
-
-function canWrite(role: BoardRole): boolean {
-  return role === 'owner' || role === 'member';
-}
-
-function normalizeDueDate(value: string): string | null {
-  const trimmed = value.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return null;
-  }
-
-  const [yearText, monthText, dayText] = trimmed.split('-');
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  if (
-    Number.isNaN(date.getTime()) ||
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
-    return null;
-  }
-
-  return trimmed;
-}
-
-async function resolveBoardAssigneeName(boardId: number, assigneeValue: string): Promise<string | null> {
-  const trimmed = assigneeValue.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const result = await pool.query(
-    `SELECT u.name
-     FROM board_members bm
-     JOIN users u ON u.id = bm.user_id
-     WHERE bm.board_id = $1
-       AND (LOWER(u.name) = LOWER($2) OR LOWER(u.email) = LOWER($2))
-     LIMIT 1`,
-    [boardId, trimmed]
-  );
-
-  if (result.rowCount === 0) {
-    return null;
-  }
-
-  return result.rows[0].name as string;
-}
-
-function requireAuth(req: AuthRequest, res: express.Response, next: express.NextFunction): void {
-  try {
-    const token = parseAuthHeader(req.headers.authorization);
-    if (!token) {
-      res.status(401).json({ message: 'Missing authorization token' });
-      return;
-    }
-
-    req.user = verifyToken(token);
-    next();
-  } catch (_error) {
-    res.status(401).json({ message: 'Invalid or expired token' });
-  }
-}
-
-io.use((socket, next) => {
-  try {
-    const authToken = typeof socket.handshake.auth.token === 'string' ? socket.handshake.auth.token : null;
-    const headerValue = Array.isArray(socket.handshake.headers.authorization)
-      ? socket.handshake.headers.authorization[0]
-      : socket.handshake.headers.authorization;
-
-    const headerToken = parseAuthHeader(headerValue);
-    const token = authToken ?? headerToken;
-
-    if (!token) {
-      return next(new Error('Unauthorized'));
-    }
-
-    const user = verifyToken(token);
-    socket.data.userId = user.id;
-    return next();
-  } catch (_error) {
-    return next(new Error('Unauthorized'));
-  }
-});
+io.use(authenticateSocket);
 
 io.on('connection', (socket) => {
   socket.join(`user:${Number(socket.data.userId)}`);
@@ -233,14 +58,14 @@ io.on('connection', (socket) => {
 
     const joinedBoards = socket.data.joinedBoards as Set<number>;
     if (joinedBoards.has(boardId)) {
-      notifyBoardPresence(boardId);
+      presence.notify(boardId);
       return;
     }
 
     socket.join(`board:${boardId}`);
     joinedBoards.add(boardId);
-    addBoardPresence(boardId, Number(socket.data.userId));
-    notifyBoardPresence(boardId);
+    presence.add(boardId, Number(socket.data.userId));
+    presence.notify(boardId);
   });
 
   socket.on('leave_board', (boardId: number) => {
@@ -251,15 +76,15 @@ io.on('connection', (socket) => {
 
     socket.leave(`board:${boardId}`);
     joinedBoards.delete(boardId);
-    removeBoardPresence(boardId, Number(socket.data.userId));
-    notifyBoardPresence(boardId);
+    presence.remove(boardId, Number(socket.data.userId));
+    presence.notify(boardId);
   });
 
   socket.on('disconnect', () => {
     const joinedBoards = socket.data.joinedBoards as Set<number>;
     for (const boardId of joinedBoards) {
-      removeBoardPresence(boardId, Number(socket.data.userId));
-      notifyBoardPresence(boardId);
+      presence.remove(boardId, Number(socket.data.userId));
+      presence.notify(boardId);
     }
     joinedBoards.clear();
   });
@@ -280,90 +105,6 @@ function notifyUser(userId: number, event: string) {
     at: new Date().toISOString()
   });
 }
-
-function addBoardPresence(boardId: number, userId: number) {
-  const boardMap = boardPresence.get(boardId) ?? new Map<number, number>();
-  boardMap.set(userId, (boardMap.get(userId) ?? 0) + 1);
-  boardPresence.set(boardId, boardMap);
-}
-
-function removeBoardPresence(boardId: number, userId: number) {
-  const boardMap = boardPresence.get(boardId);
-  if (!boardMap) {
-    return;
-  }
-
-  const count = boardMap.get(userId) ?? 0;
-  if (count <= 1) {
-    boardMap.delete(userId);
-  } else {
-    boardMap.set(userId, count - 1);
-  }
-
-  if (boardMap.size === 0) {
-    boardPresence.delete(boardId);
-  }
-}
-
-function notifyBoardPresence(boardId: number) {
-  io.to(`board:${boardId}`).emit('presence_changed', {
-    boardId,
-    onlineUserIds: Array.from(boardPresence.get(boardId)?.keys() ?? []),
-    at: new Date().toISOString()
-  });
-}
-
-const registerSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(6)
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1)
-});
-
-const createBoardSchema = z.object({
-  name: z.string().min(1)
-});
-
-const createColumnSchema = z.object({
-  title: z.string().min(1)
-});
-
-const updateColumnSchema = z.object({
-  title: z.string().min(1).optional(),
-  position: z.number().int().optional()
-});
-
-const createCardSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  assignee: z.string().optional(),
-  dueDate: z.string().optional()
-});
-
-const updateCardSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  assignee: z.string().nullable().optional(),
-  dueDate: z.string().nullable().optional()
-});
-
-const moveCardSchema = z.object({
-  toColumnId: z.number().int(),
-  toPosition: z.number().int().min(0)
-});
-
-const addMemberSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(['member', 'viewer'])
-});
-
-const addCommentSchema = z.object({
-  body: z.string().min(1)
-});
 
 app.get('/api/health', async (_req, res) => {
   await pool.query('SELECT 1');
