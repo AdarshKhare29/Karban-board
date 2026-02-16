@@ -1,81 +1,105 @@
-# Collaborative Kanban Board (Phase 2)
+# Collaborative Kanban Board
 
-Full-stack collaborative kanban app with authenticated users, board membership roles, PostgreSQL persistence, and realtime board updates.
+A full-stack **collaborative Kanban board** with real-time updates, authentication, board roles, comments, activity timeline, and online presence.
+
+## Features
+- Authentication (register/login with JWT)
+- Role-based board access (`owner`, `member`, `viewer`)
+- Create boards, columns, and cards
+- Drag-and-drop card movement
+- Card detail modal (title, description, assignee, due date)
+- Assignee validation against board members
+- Card comments
+- Board activity timeline
+- Real-time sync via Socket.IO
+- Real-time online presence indicators
+- API integration test suite + CI workflow
 
 ## Tech Stack
 - Frontend: React + TypeScript + Vite
 - Backend: Node.js + Express + TypeScript
 - Database: PostgreSQL
 - Realtime: Socket.IO (WebSockets)
-
-## Phase 3 Features
-- User registration and login (JWT)
-- Protected API routes
-- Board membership roles: `owner`, `member`, `viewer`
-- Owner can invite existing users by email
-- Role-based write protection for columns/cards
-- Realtime updates scoped to authorized board members
-- Card detail modal (title/description/assignee/due date edit)
-- Card comments
-- Board activity timeline
+- Testing: Node test runner (`node --test`)
 
 ## Project Structure
-- `/Users/adarshkha/Documents/New project/client`
-- `/Users/adarshkha/Documents/New project/server`
-- `/Users/adarshkha/Documents/New project/server/db/schema.sql`
+- `client/` React app
+- `server/` Express API + Socket.IO
+- `server/db/schema.sql` PostgreSQL schema
+- `.github/workflows/ci.yml` GitHub Actions CI
 
-## Setup
-1. Install dependencies:
+## Prerequisites
+- Node.js 20+
+- npm
+- PostgreSQL (local or Docker)
+
+## Quick Start
+1. Install dependencies
 ```bash
 npm install
 ```
 
-2. Start PostgreSQL:
+2. Start PostgreSQL (Docker option)
 ```bash
 docker compose up -d
 ```
 
-3. Configure env files:
+3. Create env files
 ```bash
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-4. Set JWT secret in `/Users/adarshkha/Documents/New project/server/.env`:
+4. Set JWT secret in `server/.env`
 ```env
 JWT_SECRET=replace-with-a-long-random-secret
 ```
 
-5. Initialize / migrate database schema:
+5. Initialize/migrate DB schema
 ```bash
 npm run db:init -w server
 ```
 
-6. Run backend:
+6. Run backend
 ```bash
 npm run dev -w server
 ```
 
-7. Run frontend:
+7. Run frontend (new terminal)
 ```bash
 npm run dev -w client
 ```
 
-8. Open app:
-- [http://localhost:5173](http://localhost:5173)
+8. Open app
+- http://localhost:5173
 
-## API Integration Tests
-Run backend integration tests (auth, permissions, due-date validation, assignee membership, activity/no-op checks):
+## Environment Variables
+### `server/.env`
+- `PORT` (default `4000`)
+- `DATABASE_URL` (example: `postgres://postgres:postgres@localhost:5432/kanban_db`)
+- `CLIENT_ORIGIN` (default `http://localhost:5173`)
+- `JWT_SECRET` (required)
 
+### `client/.env`
+- `VITE_API_URL` (default `http://localhost:4000`)
+- `VITE_SOCKET_URL` (default `http://localhost:4000`)
+
+## Running Tests
+API integration tests:
 ```bash
-cd "/Users/adarshkha/Documents/New project"
 npm run test:api -w server
 ```
 
-Optional env overrides for tests:
+Optional test env overrides:
 - `TEST_API_PORT` (default: `4101`)
 - `TEST_DATABASE_URL` (default: `DATABASE_URL` or local `kanban_db`)
 - `TEST_JWT_SECRET` (default: `integration-test-secret`)
+
+## Build
+```bash
+npm run build -w server
+npm run build -w client
+```
 
 ## Key API Endpoints
 Public:
@@ -100,3 +124,24 @@ Authenticated:
 - `GET /api/cards/:cardId/comments`
 - `POST /api/cards/:cardId/comments` (owner/member)
 - `DELETE /api/comments/:commentId` (owner or comment author)
+
+## CI
+GitHub Actions workflow is included in:
+- `.github/workflows/ci.yml`
+
+It runs:
+- install (`npm ci`)
+- server build
+- client build
+- API integration tests (with PostgreSQL service)
+
+## Troubleshooting
+- `Cannot find package 'bcryptjs'`:
+  - Run `npm install`
+
+- `relation "activities" does not exist`:
+  - Run `npm run db:init -w server`
+
+- Due date appears shifted/timezoned:
+  - Already handled by backend date parser in `server/src/db.ts`.
+
