@@ -24,8 +24,6 @@ services:
         generateValue: true
       - key: CLIENT_ORIGIN
         sync: false
-    preDeployCommand: npm run db:init
-
   - type: web
     name: kanban-web
     runtime: static
