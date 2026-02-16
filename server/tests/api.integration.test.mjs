@@ -192,6 +192,9 @@ describe('API integration', () => {
     assert.ok(board.body.columns.length >= 1);
 
     const todoColumnId = board.body.columns[0].id;
+    const todoColumnTitle = board.body.columns[0].title;
+    const inProgressColumnId = board.body.columns[1].id;
+    const inProgressColumnTitle = board.body.columns[1].title;
 
     const invalidDueDate = await api(`/api/columns/${todoColumnId}/cards`, {
       method: 'POST',
@@ -239,11 +242,38 @@ describe('API integration', () => {
     assert.equal(createdCard.body.assignee, 'Member User');
     assert.equal(createdCard.body.due_date, '2026-03-10');
 
+    const movedCard = await api(`/api/cards/${createdCard.body.id}/move`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${owner.body.token}`
+      },
+      body: JSON.stringify({ toColumnId: inProgressColumnId, toPosition: 0 })
+    });
+    assert.equal(movedCard.status, 200);
+    assert.equal(movedCard.body.column_id, inProgressColumnId);
+
     const activities = await api(`/api/boards/${boardId}/activities?limit=50`, {
       headers: { Authorization: `Bearer ${owner.body.token}` }
     });
     assert.equal(activities.status, 200);
     assert.ok(activities.body.some((item) => item.action === 'created' && item.message.includes('Valid Card')));
+    assert.ok(
+      activities.body.some(
+        (item) => item.action === 'moved' && item.message.includes(todoColumnTitle) && item.message.includes(inProgressColumnTitle)
+      )
+    );
+
+    const cardActivities = await api(`/api/cards/${createdCard.body.id}/activities?limit=50`, {
+      headers: { Authorization: `Bearer ${owner.body.token}` }
+    });
+    assert.equal(cardActivities.status, 200);
+    assert.ok(cardActivities.body.some((item) => item.action === 'created' && item.message.includes('Valid Card')));
+    assert.ok(
+      cardActivities.body.some(
+        (item) => item.action === 'moved' && item.message.includes(todoColumnTitle) && item.message.includes(inProgressColumnTitle)
+      )
+    );
 
     const noOpUpdate = await api(`/api/cards/${createdCard.body.id}`, {
       method: 'PATCH',
@@ -399,5 +429,12 @@ describe('API integration', () => {
     assert.equal(activities.status, 200);
     assert.ok(activities.body.some((item) => item.entity_type === 'comment' && item.action === 'created'));
     assert.ok(activities.body.some((item) => item.entity_type === 'comment' && item.action === 'deleted'));
+
+    const cardActivities = await api(`/api/cards/${cardId}/activities?limit=50`, {
+      headers: { Authorization: `Bearer ${owner.body.token}` }
+    });
+    assert.equal(cardActivities.status, 200);
+    assert.ok(cardActivities.body.some((item) => item.entity_type === 'comment' && item.action === 'created'));
+    assert.ok(cardActivities.body.some((item) => item.entity_type === 'comment' && item.action === 'deleted'));
   });
 });

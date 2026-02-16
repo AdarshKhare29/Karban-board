@@ -373,6 +373,54 @@ app.get('/api/boards/:boardId/activities', async (req: AuthRequest, res, next) =
   }
 });
 
+app.get('/api/cards/:cardId/activities', async (req: AuthRequest, res, next) => {
+  try {
+    const cardId = Number(req.params.cardId);
+    const userId = req.user!.id;
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 30), 1), 100);
+
+    if (Number.isNaN(cardId)) {
+      res.status(400).json({ message: 'Invalid card id' });
+      return;
+    }
+
+    const card = await getCardWithBoard(cardId);
+    if (!card) {
+      res.status(404).json({ message: 'Card not found' });
+      return;
+    }
+
+    const role = await getBoardRole(userId, card.board_id);
+    if (!role) {
+      res.status(403).json({ message: 'Not authorized for this board' });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT a.id, a.board_id, a.actor_user_id, a.entity_type, a.entity_id, a.action, a.message, a.metadata, a.created_at,
+              u.name AS actor_name, u.email AS actor_email
+       FROM activities a
+       LEFT JOIN users u ON u.id = a.actor_user_id
+       WHERE a.board_id = $1
+         AND (
+           (a.entity_type = 'card' AND a.entity_id = $2)
+           OR (
+             a.metadata ? 'cardId'
+             AND (a.metadata->>'cardId') ~ '^[0-9]+$'
+             AND (a.metadata->>'cardId')::int = $2
+           )
+         )
+       ORDER BY a.created_at DESC
+       LIMIT $3`,
+      [card.board_id, cardId, limit]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/boards/:boardId/members', async (req: AuthRequest, res, next) => {
   try {
     const boardId = Number(req.params.boardId);
@@ -587,7 +635,8 @@ app.post('/api/columns/:columnId/cards', async (req: AuthRequest, res, next) => 
       entityType: 'card',
       entityId: card.id,
       action: 'created',
-      message: `Created card \"${card.title}\"`
+      message: `Created card \"${card.title}\"`,
+      metadata: { cardId: card.id }
     });
 
     notifyBoard(boardId, 'card_created');
@@ -695,7 +744,8 @@ app.patch('/api/cards/:cardId', async (req: AuthRequest, res, next) => {
       entityType: 'card',
       entityId: cardId,
       action: 'updated',
-      message: `Updated card \"${nextTitle}\"`
+      message: `Updated card \"${nextTitle}\"`,
+      metadata: { cardId }
     });
 
     notifyBoard(existing.board_id, 'card_updated');
@@ -736,7 +786,8 @@ app.delete('/api/cards/:cardId', async (req: AuthRequest, res, next) => {
       entityType: 'card',
       entityId: cardId,
       action: 'deleted',
-      message: `Deleted card \"${existing.title}\"`
+      message: `Deleted card \"${existing.title}\"`,
+      metadata: { cardId }
     });
 
     notifyBoard(existing.board_id, 'card_deleted');
@@ -777,11 +828,44 @@ app.post('/api/cards/:cardId/move', async (req: AuthRequest, res, next) => {
       return;
     }
 
-    const targetColumnResult = await client.query('SELECT id, board_id FROM columns WHERE id = $1', [data.toColumnId]);
+    const sourceColumnResult = await client.query('SELECT id, board_id, title FROM columns WHERE id = $1', [card.column_id]);
+    if (sourceColumnResult.rowCount === 0 || sourceColumnResult.rows[0].board_id !== card.board_id) {
+      await client.query('ROLLBACK');
+      res.status(400).json({ message: 'Source column is invalid for this board' });
+      return;
+    }
+
+    const targetColumnResult = await client.query('SELECT id, board_id, title FROM columns WHERE id = $1', [data.toColumnId]);
     if (targetColumnResult.rowCount === 0 || targetColumnResult.rows[0].board_id !== card.board_id) {
       await client.query('ROLLBACK');
       res.status(400).json({ message: 'Target column is invalid for this board' });
       return;
+    }
+    const fromColumnTitle = sourceColumnResult.rows[0].title as string;
+    const toColumnTitle = targetColumnResult.rows[0].title as string;
+
+    const cardsInSourceBeforeMoveResult = await client.query(
+      `SELECT id FROM cards
+       WHERE column_id = $1
+       ORDER BY position ASC, id ASC`,
+      [card.column_id]
+    );
+    const sourceIdsBeforeMove = (cardsInSourceBeforeMoveResult.rows as Array<{ id: number }>).map((row) => row.id);
+    const currentIndex = sourceIdsBeforeMove.indexOf(cardId);
+
+    if (data.toColumnId === card.column_id) {
+      const targetIndex = Math.min(data.toPosition, Math.max(sourceIdsBeforeMove.length - 1, 0));
+      if (targetIndex === currentIndex) {
+        const unchangedCardResult = await client.query(
+          `SELECT id, board_id, column_id, title, description, assignee, due_date, position, created_at, updated_at
+           FROM cards
+           WHERE id = $1`,
+          [cardId]
+        );
+        await client.query('ROLLBACK');
+        res.json(unchangedCardResult.rows[0]);
+        return;
+      }
     }
 
     await client.query('UPDATE cards SET column_id = $1 WHERE id = $2', [data.toColumnId, cardId]);
@@ -828,7 +912,14 @@ app.post('/api/cards/:cardId/move', async (req: AuthRequest, res, next) => {
       entityType: 'card',
       entityId: cardId,
       action: 'moved',
-      message: `Moved card \"${card.title}\"`
+      message: `Moved card \"${card.title}\" from \"${fromColumnTitle}\" to \"${toColumnTitle}\"`,
+      metadata: {
+        cardId,
+        fromColumnId: card.column_id,
+        fromColumnTitle,
+        toColumnId: data.toColumnId,
+        toColumnTitle
+      }
     });
 
     notifyBoard(card.board_id, 'card_moved');
@@ -915,7 +1006,8 @@ app.post('/api/cards/:cardId/comments', async (req: AuthRequest, res, next) => {
       entityType: 'comment',
       entityId: result.rows[0].id as number,
       action: 'created',
-      message: `Commented on card \"${card.title}\"`
+      message: `Commented on card \"${card.title}\"`,
+      metadata: { cardId }
     });
 
     notifyBoard(card.board_id, 'comment_created');
@@ -971,7 +1063,8 @@ app.delete('/api/comments/:commentId', async (req: AuthRequest, res, next) => {
         entityType: 'comment',
         entityId: commentId,
         action: 'deleted',
-        message: `Deleted a comment on card \"${card.title}\"`
+        message: `Deleted a comment on card \"${card.title}\"`,
+        metadata: { cardId: comment.card_id }
       });
     }
 
