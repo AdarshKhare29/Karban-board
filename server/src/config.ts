@@ -15,6 +15,9 @@ export const clientOrigins = clientOriginRaw
   .filter((origin) => origin.length > 0);
 
 export function isClientOriginAllowed(origin: string) {
+  if (clientOrigins.length === 0) {
+    return true;
+  }
   return clientOrigins.includes(normalizeOrigin(origin));
 }
 export const jwtSecret: string = process.env.JWT_SECRET ?? '';

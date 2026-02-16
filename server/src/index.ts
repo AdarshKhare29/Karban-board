@@ -35,7 +35,7 @@ const io = new Server(httpServer, {
         callback(null, true);
         return;
       }
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   }
 });
@@ -48,7 +48,7 @@ app.use(
         callback(null, true);
         return;
       }
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   })
 );
