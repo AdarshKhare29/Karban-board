@@ -9,11 +9,26 @@ export function App() {
 
   if (app.token && app.authInitializing) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <h1>Loading workspace</h1>
-          <p>Please wait...</p>
-        </div>
+      <div className="page skeleton-page">
+        <aside className="sidebar skeleton-sidebar">
+          <div className="skeleton skeleton-title" />
+          <div className="skeleton skeleton-line" />
+          <div className="skeleton skeleton-line short" />
+          <div className="skeleton skeleton-button" />
+          <div className="skeleton-board-list">
+            <div className="skeleton skeleton-board-item" />
+            <div className="skeleton skeleton-board-item" />
+            <div className="skeleton skeleton-board-item" />
+          </div>
+        </aside>
+        <main className="main">
+          <div className="skeleton skeleton-header" />
+          <div className="skeleton-columns">
+            <div className="skeleton skeleton-column" />
+            <div className="skeleton skeleton-column" />
+            <div className="skeleton skeleton-column" />
+          </div>
+        </main>
       </div>
     );
   }
