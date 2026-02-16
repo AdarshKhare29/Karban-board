@@ -171,7 +171,7 @@ export function useKanbanApp() {
     }
 
     const onBoardsChanged = () => {
-      void loadBoards();
+      void loadBoards(false);
     };
 
     socket.on('boards_changed', onBoardsChanged);
@@ -211,7 +211,7 @@ export function useKanbanApp() {
     try {
       const me = await request<User>('/api/auth/me', token);
       setUser(me);
-      await loadBoards();
+      await loadBoards(true);
       setError(null);
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
@@ -225,7 +225,7 @@ export function useKanbanApp() {
     }
   }
 
-  async function loadBoards() {
+  async function loadBoards(waitForBoard = false) {
     setLoadingBoards(true);
     try {
       const items = await request<BoardSummary[]>('/api/boards', token);
@@ -242,7 +242,11 @@ export function useKanbanApp() {
 
       const nextId = activeBoardId && items.some((board) => board.id === activeBoardId) ? activeBoardId : items[0].id;
       setActiveBoardId(nextId);
-      void loadBoard(nextId, false);
+      if (waitForBoard) {
+        await loadBoard(nextId, true);
+      } else {
+        void loadBoard(nextId, false);
+      }
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
       if (status === 401) {

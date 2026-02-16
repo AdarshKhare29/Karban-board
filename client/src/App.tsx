@@ -11,8 +11,8 @@ export function App() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1>Restoring session</h1>
-          <p>Loading your boards...</p>
+          <h1>Loading workspace</h1>
+          <p>Please wait...</p>
         </div>
       </div>
     );
