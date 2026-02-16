@@ -120,6 +120,7 @@ body {
 
 .main {
   padding: 24px;
+  min-width: 0;
 }
 
 .error {
@@ -131,6 +132,7 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .board-role {
@@ -141,6 +143,13 @@ body {
 .create-column {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  width: min(100%, 420px);
+}
+
+.create-column input {
+  min-width: 0;
+  flex: 1;
 }
 
 .members {
@@ -171,6 +180,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px auto;
   gap: 8px;
+  align-items: center;
 }
 
 .members-list {
@@ -207,7 +217,7 @@ body {
 .invite-form {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
 }
 
@@ -228,6 +238,10 @@ body {
   gap: 8px;
   max-height: 180px;
   overflow-y: auto;
+}
+
+.card-activity-list {
+  max-height: 240px;
 }
 
 .activity-item {
@@ -255,9 +269,44 @@ body {
 
 .column {
   min-width: 300px;
+  width: min(340px, 88vw);
   background: #e2e8f0;
   border-radius: 12px;
   padding: 12px;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.column-header h3 {
+  margin: 0;
+}
+
+.column-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.column-rename-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.column-rename {
+  background: #334155;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.column-rename.cancel {
+  background: #64748b;
 }
 
 .cards {
@@ -272,6 +321,7 @@ body {
   padding: 10px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
   cursor: pointer;
+  min-width: 0;
 }
 
 .card p {
@@ -281,6 +331,23 @@ body {
 .card small {
   display: block;
   color: #475569;
+}
+
+.touch-move-controls {
+  display: none;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.touch-move {
+  background: #1e40af;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+.touch-move:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .delete {
@@ -403,6 +470,7 @@ input,
 button,
 select {
   font: inherit;
+  max-width: 100%;
 }
 
 input,
@@ -421,6 +489,16 @@ button {
   cursor: pointer;
 }
 
+@media (max-width: 1180px) {
+  .main {
+    padding: 20px;
+  }
+
+  .card-create-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+}
+
 @media (max-width: 900px) {
   .page {
     grid-template-columns: 1fr;
@@ -430,17 +508,202 @@ button {
     position: sticky;
     top: 0;
     z-index: 10;
+    padding: 16px;
   }
 
-  .invite-form {
-    grid-template-columns: 1fr;
+  .main {
+    padding: 16px;
+  }
+
+  .board-header h2 {
+    margin: 0;
+  }
+
+  .create-column {
+    width: 100%;
+  }
+
+  .create-column input,
+  .create-column button {
+    width: 100%;
   }
 
   .card-create-form {
     grid-template-columns: 1fr;
   }
 
+  .invite-form {
+    grid-template-columns: 1fr;
+  }
+
+  .columns {
+    gap: 12px;
+    margin-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .column {
+    min-width: 280px;
+    width: min(320px, calc(100vw - 48px));
+  }
+
+  .column-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .column-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .column-rename {
+    white-space: nowrap;
+  }
+
+  .add-card {
+    grid-template-columns: 1fr;
+  }
+
+  .touch-move-controls {
+    display: flex;
+  }
+
   .modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal {
+    width: min(980px, 100%);
+    max-height: 92vh;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-page {
+    padding: 14px;
+  }
+
+  .sidebar {
+    padding: 14px;
+  }
+
+  .create-board {
+    grid-template-columns: 1fr;
+  }
+
+  .board-item {
+    padding: 9px;
+    gap: 8px;
+  }
+
+  .main {
+    padding: 12px;
+  }
+
+  .members,
+  .card-create-panel,
+  .activity-panel {
+    padding: 10px;
+  }
+
+  .column {
+    min-width: calc(100vw - 28px);
+    width: calc(100vw - 28px);
+  }
+
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .modal {
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .modal-header {
+    flex-wrap: wrap;
+  }
+
+  .modal-close {
+    width: 100%;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .sidebar h1 {
+    font-size: 1.2rem;
+  }
+
+  .user-info {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .board-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .role-pill {
+    align-self: flex-start;
+  }
+
+  .column {
+    min-width: calc(100vw - 20px);
+    width: calc(100vw - 20px);
+    padding: 10px;
+  }
+
+  .card {
+    padding: 9px;
+  }
+
+  input,
+  select,
+  button {
+    min-height: 38px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape) {
+  .sidebar {
+    position: static;
+    padding: 14px;
+  }
+
+  .board-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .main {
+    padding: 14px;
+  }
+
+  .members,
+  .card-create-panel,
+  .activity-panel {
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  .activity-list,
+  .comment-list {
+    max-height: 220px;
+  }
+
+  .column {
+    width: min(320px, 58vw);
+  }
+}
+
+@media (pointer: coarse) {
+  .touch-move-controls {
+    display: flex;
   }
 }

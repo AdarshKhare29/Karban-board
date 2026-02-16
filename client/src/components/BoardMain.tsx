@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { formatDateTime, toDateInputValue } from '../lib/api';
-import type { Activity, BoardDetail, BoardMember, Column } from '../types';
+import { toDateInputValue } from '../lib/api';
+import type { BoardDetail, BoardMember, Column } from '../types';
 
 type BoardMainProps = {
   activeBoard: BoardDetail | null;
@@ -10,10 +10,10 @@ type BoardMainProps = {
   sortedColumns: Column[];
   members: BoardMember[];
   onlineUserIds: number[];
-  activities: Activity[];
   newColumnTitle: string;
   onNewColumnTitleChange: (value: string) => void;
   onCreateColumn: () => void;
+  onRenameColumn: (columnId: number, currentTitle: string) => void;
   newCardTitle: string;
   onNewCardTitleChange: (value: string) => void;
   newCardColumnId: number | null;
@@ -38,10 +38,10 @@ export function BoardMain(props: BoardMainProps) {
     sortedColumns,
     members,
     onlineUserIds,
-    activities,
     newColumnTitle,
     onNewColumnTitleChange,
     onCreateColumn,
+    onRenameColumn,
     newCardTitle,
     onNewCardTitleChange,
     newCardColumnId,
@@ -58,6 +58,43 @@ export function BoardMain(props: BoardMainProps) {
   } = props;
 
   const [dragCard, setDragCard] = useState<{ cardId: number; fromColumnId: number } | null>(null);
+  const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
+  const [editingColumnTitle, setEditingColumnTitle] = useState('');
+
+  function startRename(columnId: number, currentTitle: string) {
+    setEditingColumnId(columnId);
+    setEditingColumnTitle(currentTitle);
+  }
+
+  function cancelRename() {
+    setEditingColumnId(null);
+    setEditingColumnTitle('');
+  }
+
+  function saveRename(columnId: number, currentTitle: string) {
+    const nextTitle = editingColumnTitle.trim();
+    if (!nextTitle || nextTitle === currentTitle) {
+      cancelRename();
+      return;
+    }
+
+    onRenameColumn(columnId, nextTitle);
+    cancelRename();
+  }
+
+  function moveCardToAdjacentColumn(cardId: number, columnIndex: number, direction: 'left' | 'right') {
+    if (!canWrite) {
+      return;
+    }
+
+    const targetIndex = direction === 'left' ? columnIndex - 1 : columnIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sortedColumns.length) {
+      return;
+    }
+
+    const targetColumn = sortedColumns[targetIndex];
+    onMoveCard(cardId, targetColumn.id, targetColumn.cards.length);
+  }
 
   return (
     <main className="main">
@@ -122,23 +159,8 @@ export function BoardMain(props: BoardMainProps) {
             ) : null}
           </section>
 
-          <section className="activity-panel">
-            <h3>Activity</h3>
-            <div className="activity-list">
-              {activities.length === 0 ? <p>No activity yet.</p> : null}
-              {activities.map((activity) => (
-                <article key={activity.id} className="activity-item">
-                  <p>{activity.message}</p>
-                  <small>
-                    {activity.actor_name ?? activity.actor_email ?? 'System'} - {formatDateTime(activity.created_at)}
-                  </small>
-                </article>
-              ))}
-            </div>
-          </section>
-
           <section className="columns">
-            {sortedColumns.map((column) => (
+            {sortedColumns.map((column, columnIndex) => (
               <div
                 key={column.id}
                 className="column"
@@ -151,7 +173,43 @@ export function BoardMain(props: BoardMainProps) {
                   setDragCard(null);
                 }}
               >
-                <h3>{column.title}</h3>
+                <div className="column-header">
+                  {editingColumnId === column.id ? (
+                    <>
+                      <input
+                        className="column-rename-input"
+                        value={editingColumnTitle}
+                        onChange={(event) => setEditingColumnTitle(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            saveRename(column.id, column.title);
+                          }
+                          if (event.key === 'Escape') {
+                            cancelRename();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <div className="column-actions">
+                        <button className="column-rename" onClick={() => saveRename(column.id, column.title)}>
+                          Save
+                        </button>
+                        <button className="column-rename cancel" onClick={cancelRename}>
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3>{column.title}</h3>
+                      {canWrite ? (
+                        <button className="column-rename" onClick={() => startRename(column.id, column.title)}>
+                          Rename
+                        </button>
+                      ) : null}
+                    </>
+                  )}
+                </div>
 
                 <div className="cards">
                   {column.cards
@@ -181,6 +239,30 @@ export function BoardMain(props: BoardMainProps) {
                         <p>{card.title}</p>
                         {card.assignee ? <small>Assignee: {card.assignee}</small> : null}
                         {card.due_date ? <small>Due: {toDateInputValue(card.due_date)}</small> : null}
+                        {canWrite ? (
+                          <div className="touch-move-controls">
+                            <button
+                              className="touch-move"
+                              disabled={columnIndex === 0}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveCardToAdjacentColumn(card.id, columnIndex, 'left');
+                              }}
+                            >
+                              Prev
+                            </button>
+                            <button
+                              className="touch-move"
+                              disabled={columnIndex === sortedColumns.length - 1}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveCardToAdjacentColumn(card.id, columnIndex, 'right');
+                              }}
+                            >
+                              Next
+                            </button>
+                          </div>
+                        ) : null}
                         {canWrite ? (
                           <button
                             className="delete"

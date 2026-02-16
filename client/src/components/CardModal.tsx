@@ -1,5 +1,5 @@
 import { formatDateTime } from '../lib/api';
-import type { BoardDetail, BoardMember, Card, CardComment, User } from '../types';
+import type { Activity, BoardDetail, BoardMember, Card, CardComment, User } from '../types';
 
 type CardModalProps = {
   selectedCard: Card;
@@ -12,6 +12,7 @@ type CardModalProps = {
   cardAssignee: string;
   cardDueDate: string;
   comments: CardComment[];
+  cardActivities: Activity[];
   newCommentBody: string;
   savingCard: boolean;
   onClose: () => void;
@@ -38,6 +39,7 @@ export function CardModal(props: CardModalProps) {
     cardAssignee,
     cardDueDate,
     comments,
+    cardActivities,
     newCommentBody,
     savingCard,
     onClose,
@@ -132,6 +134,19 @@ export function CardModal(props: CardModalProps) {
                 </button>
               </div>
             ) : null}
+
+            <h4>Activity</h4>
+            <div className="activity-list card-activity-list">
+              {cardActivities.length === 0 ? <p className="muted">No card activity yet.</p> : null}
+              {cardActivities.map((activity) => (
+                <article key={activity.id} className="activity-item">
+                  <p>{activity.message}</p>
+                  <small>
+                    {activity.actor_name ?? activity.actor_email ?? 'System'} - {formatDateTime(activity.created_at)}
+                  </small>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </div>

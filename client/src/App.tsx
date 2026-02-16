@@ -48,10 +48,12 @@ export function App() {
           sortedColumns={app.sortedColumns}
           members={app.members}
           onlineUserIds={app.onlineUserIds}
-          activities={app.activities}
           newColumnTitle={app.newColumnTitle}
           onNewColumnTitleChange={app.setNewColumnTitle}
           onCreateColumn={() => void app.createColumn()}
+          onRenameColumn={(columnId, currentTitle) => {
+            void app.renameColumn(columnId, currentTitle);
+          }}
           newCardTitle={app.newCardTitle}
           onNewCardTitleChange={app.setNewCardTitle}
           newCardColumnId={app.newCardColumnId}
@@ -84,6 +86,7 @@ export function App() {
           cardAssignee={app.cardAssignee}
           cardDueDate={app.cardDueDate}
           comments={app.comments}
+          cardActivities={app.cardActivities}
           newCommentBody={app.newCommentBody}
           savingCard={app.savingCard}
           onClose={() => app.setSelectedCardId(null)}

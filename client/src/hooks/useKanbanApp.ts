@@ -31,7 +31,7 @@ export function useKanbanApp() {
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<'member' | 'viewer'>('member');
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [cardActivities, setCardActivities] = useState<Activity[]>([]);
 
   const [loadingBoard, setLoadingBoard] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export function useKanbanApp() {
     setActiveBoardId(null);
     setMembers([]);
     setOnlineUserIds([]);
-    setActivities([]);
+    setCardActivities([]);
     setSelectedCardId(null);
     setError('Session expired. Please log in again.');
   }
@@ -134,10 +134,10 @@ export function useKanbanApp() {
       }
 
       void loadBoard(activeBoardId, false);
-      void loadActivities(activeBoardId);
 
       if (selectedCardId !== null) {
         void loadComments(selectedCardId);
+        void loadCardActivities(selectedCardId);
       }
     };
 
@@ -177,6 +177,7 @@ export function useKanbanApp() {
   useEffect(() => {
     if (!selectedCard) {
       setComments([]);
+      setCardActivities([]);
       return;
     }
 
@@ -184,7 +185,7 @@ export function useKanbanApp() {
     setCardDescription(selectedCard.description ?? '');
     setCardAssignee(selectedCard.assignee ?? '');
     setCardDueDate(toDateInputValue(selectedCard.due_date));
-    void loadComments(selectedCard.id);
+    void Promise.all([loadComments(selectedCard.id), loadCardActivities(selectedCard.id)]);
   }, [selectedCard]);
 
   useEffect(() => {
@@ -226,7 +227,7 @@ export function useKanbanApp() {
         setActiveBoard(null);
         setMembers([]);
         setOnlineUserIds([]);
-        setActivities([]);
+        setCardActivities([]);
         return;
       }
 
@@ -252,19 +253,19 @@ export function useKanbanApp() {
     }
   }
 
-  async function loadActivities(boardId: number) {
+  async function loadComments(cardId: number) {
     try {
-      const nextActivities = await request<Activity[]>(`/api/boards/${boardId}/activities?limit=30`, token);
-      setActivities(nextActivities);
+      const nextComments = await request<CardComment[]>(`/api/cards/${cardId}/comments`, token);
+      setComments(nextComments);
     } catch (err) {
       setError((err as Error).message);
     }
   }
 
-  async function loadComments(cardId: number) {
+  async function loadCardActivities(cardId: number) {
     try {
-      const nextComments = await request<CardComment[]>(`/api/cards/${cardId}/comments`, token);
-      setComments(nextComments);
+      const nextActivities = await request<Activity[]>(`/api/cards/${cardId}/activities?limit=50`, token);
+      setCardActivities(nextActivities);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -286,7 +287,7 @@ export function useKanbanApp() {
 
       setActiveBoard(board);
       setActiveBoardId(boardId);
-      await Promise.all([loadMembers(boardId), loadActivities(boardId)]);
+      await loadMembers(boardId);
       setError(null);
 
       if (selectedCardId !== null) {
@@ -347,7 +348,7 @@ export function useKanbanApp() {
     setActiveBoardId(null);
     setMembers([]);
     setOnlineUserIds([]);
-    setActivities([]);
+    setCardActivities([]);
     setSelectedCardId(null);
     setError(null);
   }
@@ -383,7 +384,7 @@ export function useKanbanApp() {
       });
 
       setMemberEmail('');
-      await Promise.all([loadMembers(activeBoardId), loadActivities(activeBoardId)]);
+      await loadMembers(activeBoardId);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -400,6 +401,27 @@ export function useKanbanApp() {
         body: JSON.stringify({ title: newColumnTitle.trim() })
       });
       setNewColumnTitle('');
+      await loadBoard(activeBoardId, false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function renameColumn(columnId: number, nextTitleRaw: string) {
+    if (!activeBoardId) {
+      return;
+    }
+
+    const nextTitle = nextTitleRaw.trim();
+    if (!nextTitle) {
+      return;
+    }
+
+    try {
+      await request(`/api/columns/${columnId}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ title: nextTitle })
+      });
       await loadBoard(activeBoardId, false);
     } catch (err) {
       setError((err as Error).message);
@@ -474,7 +496,9 @@ export function useKanbanApp() {
       });
 
       await loadBoard(activeBoardId, false);
-      await loadActivities(activeBoardId);
+      if (selectedCard) {
+        await loadCardActivities(selectedCard.id);
+      }
       setSelectedCardId(null);
     } catch (err) {
       setError((err as Error).message);
@@ -495,10 +519,7 @@ export function useKanbanApp() {
       });
 
       setNewCommentBody('');
-      await loadComments(selectedCard.id);
-      if (activeBoardId) {
-        await loadActivities(activeBoardId);
-      }
+      await Promise.all([loadComments(selectedCard.id), loadCardActivities(selectedCard.id)]);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -511,10 +532,7 @@ export function useKanbanApp() {
 
     try {
       await request(`/api/comments/${commentId}`, token, { method: 'DELETE' });
-      await loadComments(selectedCard.id);
-      if (activeBoardId) {
-        await loadActivities(activeBoardId);
-      }
+      await Promise.all([loadComments(selectedCard.id), loadCardActivities(selectedCard.id)]);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -542,7 +560,7 @@ export function useKanbanApp() {
     onlineUserIds,
     memberEmail,
     memberRole,
-    activities,
+    cardActivities,
     loadingBoard,
     canWrite,
     sortedColumns,
@@ -562,6 +580,7 @@ export function useKanbanApp() {
     loadBoard,
     addMember,
     createColumn,
+    renameColumn,
     createCard,
     moveCard,
     deleteCard,
