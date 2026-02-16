@@ -32,6 +32,8 @@ export function useKanbanApp() {
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<'member' | 'viewer'>('member');
   const [cardActivities, setCardActivities] = useState<Activity[]>([]);
+  const [loadingBoards, setLoadingBoards] = useState(false);
+  const [creatingBoard, setCreatingBoard] = useState(false);
 
   const [loadingBoard, setLoadingBoard] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -218,6 +220,7 @@ export function useKanbanApp() {
   }
 
   async function loadBoards() {
+    setLoadingBoards(true);
     try {
       const items = await request<BoardSummary[]>('/api/boards', token);
       setBoards(items);
@@ -233,7 +236,7 @@ export function useKanbanApp() {
 
       const nextId = activeBoardId && items.some((board) => board.id === activeBoardId) ? activeBoardId : items[0].id;
       setActiveBoardId(nextId);
-      await loadBoard(nextId, false);
+      void loadBoard(nextId, false);
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
       if (status === 401) {
@@ -241,6 +244,8 @@ export function useKanbanApp() {
         return;
       }
       setError((err as Error).message);
+    } finally {
+      setLoadingBoards(false);
     }
   }
 
@@ -287,7 +292,7 @@ export function useKanbanApp() {
 
       setActiveBoard(board);
       setActiveBoardId(boardId);
-      await loadMembers(boardId);
+      void loadMembers(boardId);
       setError(null);
 
       if (selectedCardId !== null) {
@@ -359,16 +364,24 @@ export function useKanbanApp() {
     }
 
     try {
-      const created = await request<BoardSummary>('/api/boards', token, {
+      setCreatingBoard(true);
+      const trimmedName = boardName.trim();
+      const created = await request<{ id: number; name: string; created_at: string }>('/api/boards', token, {
         method: 'POST',
-        body: JSON.stringify({ name: boardName.trim() })
+        body: JSON.stringify({ name: trimmedName })
       });
 
       setBoardName('');
-      await loadBoards();
-      await loadBoard(created.id, false);
+      setBoards((prev) => [
+        { id: created.id, name: created.name, created_at: created.created_at, role: 'owner' },
+        ...prev.filter((board) => board.id !== created.id)
+      ]);
+      setActiveBoardId(created.id);
+      void loadBoard(created.id, false);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setCreatingBoard(false);
     }
   }
 
@@ -463,17 +476,73 @@ export function useKanbanApp() {
   }
 
   async function moveCard(cardId: number, toColumnId: number, toPosition: number) {
-    if (!activeBoardId) {
+    if (!activeBoardId || !activeBoard) {
       return;
     }
+
+    const previousBoard = activeBoard;
+    const sourceColumnIndex = activeBoard.columns.findIndex((column) => column.cards.some((card) => card.id === cardId));
+    const targetColumnIndex = activeBoard.columns.findIndex((column) => column.id === toColumnId);
+
+    if (sourceColumnIndex === -1 || targetColumnIndex === -1) {
+      return;
+    }
+
+    const sourceColumn = activeBoard.columns[sourceColumnIndex];
+    const movingCardIndex = sourceColumn.cards.findIndex((card) => card.id === cardId);
+    if (movingCardIndex === -1) {
+      return;
+    }
+
+    const movingCard = sourceColumn.cards[movingCardIndex];
+    const sourceCards = sourceColumn.cards.filter((card) => card.id !== cardId);
+    const targetColumn = activeBoard.columns[targetColumnIndex];
+    const targetCardsBase = targetColumn.id === sourceColumn.id ? sourceCards : [...targetColumn.cards];
+    const insertionIndex = Math.max(0, Math.min(toPosition, targetCardsBase.length));
+
+    const nextTargetCards = [...targetCardsBase];
+    nextTargetCards.splice(insertionIndex, 0, { ...movingCard, column_id: toColumnId });
+
+    const nextColumns = activeBoard.columns.map((column) => {
+      if (column.id === sourceColumn.id && column.id === targetColumn.id) {
+        return {
+          ...column,
+          cards: nextTargetCards.map((card, index) => ({ ...card, position: (index + 1) * 1000 }))
+        };
+      }
+
+      if (column.id === sourceColumn.id) {
+        return {
+          ...column,
+          cards: sourceCards.map((card, index) => ({ ...card, position: (index + 1) * 1000 }))
+        };
+      }
+
+      if (column.id === targetColumn.id) {
+        return {
+          ...column,
+          cards: nextTargetCards.map((card, index) => ({ ...card, position: (index + 1) * 1000 }))
+        };
+      }
+
+      return column;
+    });
+
+    setActiveBoard({
+      ...activeBoard,
+      columns: nextColumns
+    });
 
     try {
       await request(`/api/cards/${cardId}/move`, token, {
         method: 'POST',
         body: JSON.stringify({ toColumnId, toPosition })
       });
-      await loadBoard(activeBoardId, false);
+      if (selectedCardId === cardId) {
+        void loadCardActivities(cardId);
+      }
     } catch (err) {
+      setActiveBoard(previousBoard);
       setError((err as Error).message);
     }
   }
@@ -561,6 +630,8 @@ export function useKanbanApp() {
     memberEmail,
     memberRole,
     cardActivities,
+    loadingBoards,
+    creatingBoard,
     loadingBoard,
     canWrite,
     sortedColumns,

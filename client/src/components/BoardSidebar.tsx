@@ -3,6 +3,8 @@ import type { BoardSummary, User } from '../types';
 type BoardSidebarProps = {
   user: User;
   boards: BoardSummary[];
+  loadingBoards: boolean;
+  creatingBoard: boolean;
   activeBoardId: number | null;
   boardName: string;
   onBoardNameChange: (value: string) => void;
@@ -12,7 +14,7 @@ type BoardSidebarProps = {
 };
 
 export function BoardSidebar(props: BoardSidebarProps) {
-  const { user, boards, activeBoardId, boardName, onBoardNameChange, onCreateBoard, onSelectBoard, onLogout } = props;
+  const { user, boards, loadingBoards, creatingBoard, activeBoardId, boardName, onBoardNameChange, onCreateBoard, onSelectBoard, onLogout } = props;
 
   return (
     <aside className="sidebar">
@@ -28,10 +30,13 @@ export function BoardSidebar(props: BoardSidebarProps) {
 
       <div className="create-board">
         <input value={boardName} onChange={(event) => onBoardNameChange(event.target.value)} placeholder="New board name" />
-        <button onClick={onCreateBoard}>Create</button>
+        <button onClick={onCreateBoard} disabled={creatingBoard || !boardName.trim()}>
+          {creatingBoard ? 'Creating...' : 'Create'}
+        </button>
       </div>
 
       <div className="board-list">
+        {loadingBoards && boards.length === 0 ? <p className="user-info">Loading boards...</p> : null}
         {boards.map((board) => (
           <button
             key={board.id}

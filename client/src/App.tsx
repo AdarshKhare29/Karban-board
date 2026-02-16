@@ -30,6 +30,8 @@ export function App() {
         <BoardSidebar
           user={app.user}
           boards={app.boards}
+          loadingBoards={app.loadingBoards}
+          creatingBoard={app.creatingBoard}
           activeBoardId={app.activeBoardId}
           boardName={app.boardName}
           onBoardNameChange={app.setBoardName}
