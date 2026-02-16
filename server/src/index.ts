@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { z } from 'zod';
 import { authenticateSocket, requireAuth, signToken } from './auth.js';
 import { logActivity } from './activity.js';
-import { clientOrigins, port } from './config.js';
+import { clientOrigins, isClientOriginAllowed, port } from './config.js';
 import { pool } from './db.js';
 import { canWrite, getBoardRole, getCardWithBoard, normalizeDueDate, resolveBoardAssigneeName } from './helpers.js';
 import { createPresenceManager } from './presence.js';
@@ -30,7 +30,13 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: clientOrigins
+    origin(origin, callback) {
+      if (!origin || isClientOriginAllowed(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Not allowed by CORS'));
+    }
   }
 });
 const presence = createPresenceManager(io);
@@ -38,7 +44,7 @@ const presence = createPresenceManager(io);
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || clientOrigins.includes(origin)) {
+      if (!origin || isClientOriginAllowed(origin)) {
         callback(null, true);
         return;
       }
