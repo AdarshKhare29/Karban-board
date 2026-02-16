@@ -23,10 +23,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_ORIGIN
-        fromService:
-          type: web
-          name: kanban-web
-          property: url
+        sync: false
     postDeployCommand: npm run db:init
 
   - type: web
@@ -42,9 +39,9 @@ services:
         fromService:
           type: web
           name: kanban-api
-          property: url
+          envVarKey: RENDER_EXTERNAL_URL
       - key: VITE_SOCKET_URL
         fromService:
           type: web
           name: kanban-api
-          property: url
+          envVarKey: RENDER_EXTERNAL_URL
