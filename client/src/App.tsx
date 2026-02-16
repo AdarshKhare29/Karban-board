@@ -7,6 +7,17 @@ import { useKanbanApp } from './hooks/useKanbanApp';
 export function App() {
   const app = useKanbanApp();
 
+  if (app.token && app.authInitializing) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <h1>Restoring session</h1>
+          <p>Loading your boards...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!app.token || !app.user) {
     return (
       <AuthPage

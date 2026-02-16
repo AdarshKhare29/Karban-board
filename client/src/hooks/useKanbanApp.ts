@@ -17,6 +17,7 @@ const TOKEN_STORAGE_KEY = 'kanban_auth_token';
 export function useKanbanApp() {
   const boardRequestIdRef = useRef(0);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [authInitializing, setAuthInitializing] = useState<boolean>(() => Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)));
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -32,7 +33,7 @@ export function useKanbanApp() {
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<'member' | 'viewer'>('member');
   const [cardActivities, setCardActivities] = useState<Activity[]>([]);
-  const [loadingBoards, setLoadingBoards] = useState(false);
+  const [loadingBoards, setLoadingBoards] = useState<boolean>(() => Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)));
   const [creatingBoard, setCreatingBoard] = useState(false);
 
   const [loadingBoard, setLoadingBoard] = useState(false);
@@ -117,9 +118,12 @@ export function useKanbanApp() {
 
   useEffect(() => {
     if (!token) {
+      setAuthInitializing(false);
+      setLoadingBoards(false);
       return;
     }
 
+    setAuthInitializing(true);
     void bootstrap();
   }, [token]);
 
@@ -216,6 +220,8 @@ export function useKanbanApp() {
         return;
       }
       setError((err as Error).message);
+    } finally {
+      setAuthInitializing(false);
     }
   }
 
@@ -347,6 +353,7 @@ export function useKanbanApp() {
 
   function logout() {
     setTokenState(null);
+    setAuthInitializing(false);
     setUser(null);
     setBoards([]);
     setActiveBoard(null);
@@ -354,6 +361,7 @@ export function useKanbanApp() {
     setMembers([]);
     setOnlineUserIds([]);
     setCardActivities([]);
+    setLoadingBoards(false);
     setSelectedCardId(null);
     setError(null);
   }
@@ -614,6 +622,7 @@ export function useKanbanApp() {
     authName,
     authEmail,
     authPassword,
+    authInitializing,
     error,
     setAuthMode,
     setAuthName,
