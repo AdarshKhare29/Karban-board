@@ -64,26 +64,27 @@ body::after {
 }
 
 .auth-shell {
-  width: min(980px, 100%);
+  width: min(1060px, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.82fr);
   gap: 18px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.42);
   border: 1px solid rgba(154, 188, 220, 0.34);
   border-radius: 22px;
   padding: 16px;
-  box-shadow: 0 24px 55px rgba(8, 28, 53, 0.14);
+  box-shadow: 0 24px 55px rgba(8, 28, 53, 0.12);
   backdrop-filter: blur(8px);
 }
 
 .auth-brand {
   border-radius: 16px;
-  padding: 22px;
+  padding: 28px;
   background: linear-gradient(145deg, #09203a 0%, #113157 52%, #12739e 100%);
   color: #f3fbff;
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 14px;
+  min-height: 460px;
 }
 
 .auth-badge {
@@ -100,7 +101,7 @@ body::after {
 
 .auth-brand h1 {
   margin: 0;
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
   line-height: 1.1;
   letter-spacing: 0.01em;
 }
@@ -108,7 +109,8 @@ body::after {
 .auth-copy {
   margin: 0;
   color: rgba(231, 247, 255, 0.95);
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 1.04rem;
 }
 
 .auth-points {
@@ -137,11 +139,11 @@ body::after {
 
 .auth-card {
   width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 18px;
   padding: 22px;
-  box-shadow: 0 16px 34px rgba(4, 24, 50, 0.12);
+  box-shadow: 0 6px 18px rgba(4, 24, 50, 0.08);
   backdrop-filter: blur(8px);
   display: grid;
   gap: 11px;
@@ -849,6 +851,11 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .auth-brand {
+    min-height: 0;
+    padding: 20px;
+  }
+
   .page {
     grid-template-columns: 1fr;
   }
@@ -943,6 +950,10 @@ button:disabled {
   .auth-brand {
     padding: 16px;
     gap: 10px;
+  }
+
+  .auth-brand h1 {
+    font-size: 1.72rem;
   }
 
   .sidebar {
