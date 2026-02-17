@@ -76,6 +76,11 @@ body {
   background: #334155;
 }
 
+.admin-toggle {
+  margin-top: 8px;
+  background: #0b5a9e;
+}
+
 .create-board {
   margin-top: 16px;
   display: grid;
@@ -257,6 +262,38 @@ body {
 
 .activity-item small {
   color: #64748b;
+}
+
+.admin-users-panel {
+  margin-top: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.admin-users-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.92rem;
+}
+
+.admin-users-table th {
+  color: #475569;
+  font-weight: 600;
 }
 
 .columns {

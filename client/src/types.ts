@@ -2,6 +2,7 @@ export type User = {
   id: number;
   name: string;
   email: string;
+  is_admin?: boolean;
 };
 
 export type BoardSummary = {
@@ -74,4 +75,12 @@ export type Activity = {
 export type AuthResponse = {
   token: string;
   user: User;
+};
+
+export type AdminUser = {
+  id: number;
+  name: string;
+  email: string;
+  created_at: string;
+  is_admin: boolean;
 };

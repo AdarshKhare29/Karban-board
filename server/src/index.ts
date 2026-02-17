@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { z } from 'zod';
 import { authenticateSocket, requireAuth, signToken } from './auth.js';
 import { logActivity } from './activity.js';
-import { port } from './config.js';
+import { isAdminEmail, port } from './config.js';
 import { pool } from './db.js';
 import { canWrite, getBoardRole, getCardWithBoard, normalizeDueDate, resolveBoardAssigneeName } from './helpers.js';
 import { createPresenceManager } from './presence.js';
@@ -107,6 +107,15 @@ function notifyUser(userId: number, event: string) {
   });
 }
 
+function requireAdmin(req: AuthRequest, res: express.Response): boolean {
+  const email = req.user?.email;
+  if (!email || !isAdminEmail(email)) {
+    res.status(403).json({ message: 'Admin access required' });
+    return false;
+  }
+  return true;
+}
+
 app.get('/api/health', async (_req, res) => {
   await pool.query('SELECT 1');
   res.json({ ok: true });
@@ -131,7 +140,13 @@ app.post('/api/auth/register', async (req, res, next) => {
 
     const user = result.rows[0] as AuthUser;
     const token = signToken(user);
-    res.status(201).json({ token, user });
+    res.status(201).json({
+      token,
+      user: {
+        ...user,
+        is_admin: isAdminEmail(user.email)
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -162,7 +177,13 @@ app.post('/api/auth/login', async (req, res, next) => {
     };
 
     const token = signToken(safeUser);
-    res.json({ token, user: safeUser });
+    res.json({
+      token,
+      user: {
+        ...safeUser,
+        is_admin: isAdminEmail(safeUser.email)
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -177,13 +198,42 @@ app.get('/api/auth/me', requireAuth, async (req: AuthRequest, res, next) => {
       return;
     }
 
-    res.json(result.rows[0]);
+    res.json({
+      ...result.rows[0],
+      is_admin: isAdminEmail((result.rows[0].email as string) ?? '')
+    });
   } catch (error) {
     next(error);
   }
 });
 
 app.use('/api', requireAuth);
+
+app.get('/api/admin/users', async (req: AuthRequest, res, next) => {
+  try {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 200), 1), 500);
+    const result = await pool.query(
+      `SELECT id, name, email, created_at
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+
+    res.json(
+      result.rows.map((row) => ({
+        ...row,
+        is_admin: isAdminEmail((row.email as string) ?? '')
+      }))
+    );
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/boards', async (req: AuthRequest, res, next) => {
   try {

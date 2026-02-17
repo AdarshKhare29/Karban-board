@@ -1,3 +1,4 @@
+import { AdminUsersPanel } from './components/AdminUsersPanel';
 import { AuthPage } from './components/AuthPage';
 import { BoardMain } from './components/BoardMain';
 import { BoardSidebar } from './components/BoardSidebar';
@@ -65,41 +66,48 @@ export function App() {
           onSelectBoard={(boardId) => {
             void app.loadBoard(boardId, false);
           }}
+          adminView={app.adminView}
+          onOpenAdminView={() => void app.openAdminView()}
+          onCloseAdminView={app.closeAdminView}
           onLogout={app.logout}
         />
 
-        <BoardMain
-          activeBoard={app.activeBoard}
-          loadingBoard={app.loadingBoard}
-          error={app.error}
-          canWrite={app.canWrite}
-          sortedColumns={app.sortedColumns}
-          members={app.members}
-          onlineUserIds={app.onlineUserIds}
-          newColumnTitle={app.newColumnTitle}
-          onNewColumnTitleChange={app.setNewColumnTitle}
-          onCreateColumn={() => void app.createColumn()}
-          onRenameColumn={(columnId, currentTitle) => {
-            void app.renameColumn(columnId, currentTitle);
-          }}
-          newCardTitle={app.newCardTitle}
-          onNewCardTitleChange={app.setNewCardTitle}
-          newCardColumnId={app.newCardColumnId}
-          onNewCardColumnIdChange={app.setNewCardColumnId}
-          onCreateCard={() => void app.createCard()}
-          memberEmail={app.memberEmail}
-          onMemberEmailChange={app.setMemberEmail}
-          memberRole={app.memberRole}
-          onMemberRoleChange={app.setMemberRole}
-          onAddMember={() => void app.addMember()}
-          onMoveCard={(cardId, toColumnId, toPosition) => {
-            void app.moveCard(cardId, toColumnId, toPosition);
-          }}
-          onOpenCard={app.setSelectedCardId}
-          onDeleteCard={(cardId) => {
-            void app.deleteCard(cardId);
-          }}
-        />
+        {app.adminView ? (
+          <AdminUsersPanel users={app.adminUsers} loading={app.loadingAdminUsers} />
+        ) : (
+          <BoardMain
+            activeBoard={app.activeBoard}
+            loadingBoard={app.loadingBoard}
+            error={app.error}
+            canWrite={app.canWrite}
+            sortedColumns={app.sortedColumns}
+            members={app.members}
+            onlineUserIds={app.onlineUserIds}
+            newColumnTitle={app.newColumnTitle}
+            onNewColumnTitleChange={app.setNewColumnTitle}
+            onCreateColumn={() => void app.createColumn()}
+            onRenameColumn={(columnId, currentTitle) => {
+              void app.renameColumn(columnId, currentTitle);
+            }}
+            newCardTitle={app.newCardTitle}
+            onNewCardTitleChange={app.setNewCardTitle}
+            newCardColumnId={app.newCardColumnId}
+            onNewCardColumnIdChange={app.setNewCardColumnId}
+            onCreateCard={() => void app.createCard()}
+            memberEmail={app.memberEmail}
+            onMemberEmailChange={app.setMemberEmail}
+            memberRole={app.memberRole}
+            onMemberRoleChange={app.setMemberRole}
+            onAddMember={() => void app.addMember()}
+            onMoveCard={(cardId, toColumnId, toPosition) => {
+              void app.moveCard(cardId, toColumnId, toPosition);
+            }}
+            onOpenCard={app.setSelectedCardId}
+            onDeleteCard={(cardId) => {
+              void app.deleteCard(cardId);
+            }}
+          />
+        )}
       </div>
 
       {app.selectedCard ? (

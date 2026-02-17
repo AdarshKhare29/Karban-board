@@ -79,6 +79,7 @@ npm run dev -w client
 - `DATABASE_URL` (example: `postgres://postgres:postgres@localhost:5432/kanban_db`)
 - `CLIENT_ORIGIN` (default `http://localhost:5173`)
 - `JWT_SECRET` (required)
+- `ADMIN_EMAILS` (optional comma-separated emails for admin-only APIs/UI, e.g. `you@example.com,ops@example.com`)
 
 ### `client/.env`
 - `VITE_API_URL` (default `http://localhost:4000`)
@@ -109,6 +110,7 @@ Public:
 
 Authenticated:
 - `GET /api/auth/me`
+- `GET /api/admin/users` (admin only)
 - `GET /api/boards`
 - `POST /api/boards`
 - `GET /api/boards/:boardId`

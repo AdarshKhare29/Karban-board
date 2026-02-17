@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { request, toDateInputValue } from '../lib/api';
 import type {
+  AdminUser,
   Activity,
   AuthResponse,
   BoardDetail,
@@ -35,6 +36,9 @@ export function useKanbanApp() {
   const [cardActivities, setCardActivities] = useState<Activity[]>([]);
   const [loadingBoards, setLoadingBoards] = useState<boolean>(() => Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)));
   const [creatingBoard, setCreatingBoard] = useState(false);
+  const [adminView, setAdminView] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [loadingAdminUsers, setLoadingAdminUsers] = useState(false);
 
   const [loadingBoard, setLoadingBoard] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +99,8 @@ export function useKanbanApp() {
     setMembers([]);
     setOnlineUserIds([]);
     setCardActivities([]);
+    setAdminUsers([]);
+    setAdminView(false);
     setSelectedCardId(null);
     setError('Session expired. Please log in again.');
   }
@@ -365,9 +371,39 @@ export function useKanbanApp() {
     setMembers([]);
     setOnlineUserIds([]);
     setCardActivities([]);
+    setAdminUsers([]);
+    setAdminView(false);
     setLoadingBoards(false);
     setSelectedCardId(null);
     setError(null);
+  }
+
+  async function loadAdminUsers() {
+    if (!user?.is_admin) {
+      return;
+    }
+    try {
+      setLoadingAdminUsers(true);
+      const nextUsers = await request<AdminUser[]>('/api/admin/users?limit=500', token);
+      setAdminUsers(nextUsers);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoadingAdminUsers(false);
+    }
+  }
+
+  async function openAdminView() {
+    if (!user?.is_admin) {
+      return;
+    }
+    setAdminView(true);
+    setSelectedCardId(null);
+    await loadAdminUsers();
+  }
+
+  function closeAdminView() {
+    setAdminView(false);
   }
 
   async function createBoard() {
@@ -645,6 +681,9 @@ export function useKanbanApp() {
     cardActivities,
     loadingBoards,
     creatingBoard,
+    adminView,
+    adminUsers,
+    loadingAdminUsers,
     loadingBoard,
     canWrite,
     sortedColumns,
@@ -660,6 +699,8 @@ export function useKanbanApp() {
     setMemberRole,
 
     logout,
+    openAdminView,
+    closeAdminView,
     createBoard,
     loadBoard,
     addMember,
