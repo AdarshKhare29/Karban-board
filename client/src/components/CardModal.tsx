@@ -94,15 +94,19 @@ export function CardModal(props: CardModalProps) {
 
             {canWrite ? (
               <div className="modal-actions">
-                <button onClick={onSave} disabled={savingCard || !cardTitle.trim()}>
+                <button className="modal-action-btn" onClick={onSave} disabled={savingCard || !cardTitle.trim()}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                   {savingCard ? 'Saving...' : 'Save'}
                 </button>
-                <button className="delete icon-button" title="Delete card" aria-label="Delete card" onClick={onDeleteCard}>
+                <button className="delete modal-action-btn" title="Delete card" aria-label="Delete card" onClick={onDeleteCard}>
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M3 6h18" />
                     <path d="M8 6V4h8v2" />
                     <path d="M7 6l1 14h8l1-14" />
                   </svg>
+                  Delete
                 </button>
               </div>
             ) : null}

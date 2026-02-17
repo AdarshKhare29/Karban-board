@@ -894,14 +894,33 @@ body::after {
 }
 
 .modal-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   align-items: center;
 }
 
 .modal-actions .delete {
   margin-top: 0;
+}
+
+.modal-action-btn {
+  width: 100%;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.modal-action-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .comment-list {
@@ -1286,6 +1305,10 @@ button:disabled {
 
   .modal-actions button {
     width: 100%;
+  }
+
+  .modal-actions {
+    grid-template-columns: 1fr;
   }
 }
 
