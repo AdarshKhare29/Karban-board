@@ -14,6 +14,7 @@ import type {
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:4000';
 const TOKEN_STORAGE_KEY = 'kanban_auth_token';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function useKanbanApp() {
   const boardRequestIdRef = useRef(0);
@@ -332,19 +333,35 @@ export function useKanbanApp() {
   }
 
   async function submitAuth() {
-    if (!authEmail.trim() || !authPassword.trim()) {
+    const email = authEmail.trim().toLowerCase();
+    const password = authPassword;
+    const name = authName.trim();
+
+    if (!email || !password.trim()) {
+      setError('Email and password are required.');
       return;
     }
 
-    if (authMode === 'register' && !authName.trim()) {
+    if (!EMAIL_REGEX.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (authMode === 'register' && !name) {
+      setError('Full name is required.');
       return;
     }
 
     try {
       const payload =
         authMode === 'register'
-          ? { name: authName.trim(), email: authEmail.trim(), password: authPassword }
-          : { email: authEmail.trim(), password: authPassword };
+          ? { name, email, password }
+          : { email, password };
 
       const path = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
       const result = await request<AuthResponse>(path, null, {
