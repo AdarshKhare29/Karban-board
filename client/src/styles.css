@@ -167,12 +167,17 @@ body::after {
   text-align: left;
   box-shadow: none;
   transform: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  text-decoration: underline;
+  text-decoration-color: transparent;
 }
 
 .link-button:hover {
   box-shadow: none;
   transform: none;
   filter: none;
+  color: var(--accent-strong);
+  text-decoration-color: var(--accent-strong);
 }
 
 .page {
