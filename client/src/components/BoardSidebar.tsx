@@ -33,9 +33,17 @@ export function BoardSidebar(props: BoardSidebarProps) {
     onLogout
   } = props;
 
+  const initials = user.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+
   return (
     <aside className="sidebar">
       <h1>Kanban Boards</h1>
+      <div className="user-avatar">{initials || 'U'}</div>
       <p className="user-info">
         {user.name}
         <br />
@@ -64,9 +72,13 @@ export function BoardSidebar(props: BoardSidebarProps) {
           <button
             key={board.id}
             className={board.id === activeBoardId ? 'board-item active' : 'board-item'}
+            style={{ ['--board-accent' as string]: `hsl(${(board.id * 57) % 360} 82% 66%)` }}
             onClick={() => onSelectBoard(board.id)}
           >
-            {board.name}
+            <span className="board-label">
+              <span className="board-dot" />
+              {board.name}
+            </span>
             <span className="role-pill">{board.role}</span>
           </button>
             ))

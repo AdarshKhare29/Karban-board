@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { AdminUsersPanel } from './components/AdminUsersPanel';
 import { AuthPage } from './components/AuthPage';
 import { BoardMain } from './components/BoardMain';
@@ -7,6 +8,70 @@ import { useKanbanApp } from './hooks/useKanbanApp';
 
 export function App() {
   const app = useKanbanApp();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+
+  useEffect(() => {
+    if (!app.token || !app.user) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      } else if (event.key === 'Escape') {
+        setPaletteOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [app.token, app.user]);
+
+  const paletteActions = useMemo(() => {
+    const boardActions = app.boards.map((board) => ({
+      id: `board-${board.id}`,
+      label: `Open board: ${board.name}`,
+      run: () => {
+        void app.loadBoard(board.id, false);
+      }
+    }));
+
+    const staticActions = [
+      {
+        id: 'create-board',
+        label: 'Focus Create Board',
+        run: () => {
+          const input = document.querySelector<HTMLInputElement>('.create-board input');
+          input?.focus();
+        }
+      },
+      {
+        id: 'logout',
+        label: 'Logout',
+        run: () => app.logout()
+      }
+    ];
+
+    if (app.user?.is_admin) {
+      staticActions.unshift({
+        id: 'open-admin',
+        label: app.adminView ? 'Switch to Boards View' : 'Open Users Admin',
+        run: () => (app.adminView ? app.closeAdminView() : void app.openAdminView())
+      });
+    }
+
+    return [...staticActions, ...boardActions];
+  }, [app.boards, app.loadBoard, app.logout, app.user, app.adminView, app.closeAdminView, app.openAdminView]);
+
+  const filteredPaletteActions = useMemo(() => {
+    const query = paletteQuery.trim().toLowerCase();
+    if (!query) {
+      return paletteActions.slice(0, 8);
+    }
+    return paletteActions.filter((item) => item.label.toLowerCase().includes(query)).slice(0, 10);
+  }, [paletteActions, paletteQuery]);
 
   if (app.token && app.authInitializing) {
     return (
@@ -47,6 +112,7 @@ export function App() {
         onAuthPasswordChange={app.setAuthPassword}
         onSubmit={() => void app.submitAuth()}
         onToggleMode={() => app.setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))}
+        onSelectMode={app.setAuthMode}
       />
     );
   }
@@ -141,6 +207,36 @@ export function App() {
           onAddComment={() => void app.addComment()}
           onDeleteComment={(commentId) => void app.deleteComment(commentId)}
         />
+      ) : null}
+
+      {paletteOpen ? (
+        <div className="palette-overlay" onClick={() => setPaletteOpen(false)}>
+          <div className="palette" onClick={(event) => event.stopPropagation()}>
+            <input
+              autoFocus
+              className="palette-input"
+              placeholder="Search actions or boards..."
+              value={paletteQuery}
+              onChange={(event) => setPaletteQuery(event.target.value)}
+            />
+            <div className="palette-list">
+              {filteredPaletteActions.length === 0 ? <p className="muted">No matching actions</p> : null}
+              {filteredPaletteActions.map((action) => (
+                <button
+                  key={action.id}
+                  className="palette-item"
+                  onClick={() => {
+                    action.run();
+                    setPaletteOpen(false);
+                    setPaletteQuery('');
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : null}
     </>
   );

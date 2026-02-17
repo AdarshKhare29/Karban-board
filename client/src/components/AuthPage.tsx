@@ -9,6 +9,7 @@ type AuthPageProps = {
   onAuthPasswordChange: (value: string) => void;
   onSubmit: () => void;
   onToggleMode: () => void;
+  onSelectMode: (mode: 'login' | 'register') => void;
 };
 
 export function AuthPage(props: AuthPageProps) {
@@ -22,7 +23,8 @@ export function AuthPage(props: AuthPageProps) {
     onAuthEmailChange,
     onAuthPasswordChange,
     onSubmit,
-    onToggleMode
+    onToggleMode,
+    onSelectMode
   } = props;
 
   return (
@@ -40,6 +42,14 @@ export function AuthPage(props: AuthPageProps) {
         </div>
 
         <div className="auth-card">
+          <div className="auth-tabs">
+            <button className={authMode === 'login' ? 'auth-tab active' : 'auth-tab'} onClick={() => onSelectMode('login')}>
+              Login
+            </button>
+            <button className={authMode === 'register' ? 'auth-tab active' : 'auth-tab'} onClick={() => onSelectMode('register')}>
+              Register
+            </button>
+          </div>
           <h2>{authMode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
           <p>{authMode === 'login' ? 'Sign in to continue' : 'Set up your account to get started'}</p>
 

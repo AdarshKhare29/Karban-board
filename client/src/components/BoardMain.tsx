@@ -96,8 +96,36 @@ export function BoardMain(props: BoardMainProps) {
     onMoveCard(cardId, targetColumn.id, targetColumn.cards.length);
   }
 
+  function getInitials(name: string) {
+    return (
+      name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('') || 'U'
+    );
+  }
+
+  function getDueBadge(dueDate: string | null) {
+    if (!dueDate) {
+      return null;
+    }
+    const current = new Date();
+    const due = new Date(toDateInputValue(dueDate));
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const days = Math.floor((due.getTime() - current.setHours(0, 0, 0, 0)) / msPerDay);
+    if (days < 0) {
+      return { label: 'Overdue', tone: 'danger' as const };
+    }
+    if (days <= 2) {
+      return { label: 'Due Soon', tone: 'warn' as const };
+    }
+    return { label: 'Planned', tone: 'ok' as const };
+  }
+
   return (
-    <main className="main">
+    <main className={`main board-theme-${((activeBoard?.id ?? 1) % 5) + 1}`}>
       {error ? <p className="error">{error}</p> : null}
       {loadingBoard ? <p>Loading board...</p> : null}
 
@@ -141,6 +169,7 @@ export function BoardMain(props: BoardMainProps) {
             <div className="members-list">
               {members.map((member) => (
                 <span key={member.id} className={onlineUserIds.includes(member.id) ? 'member-pill online' : 'member-pill'}>
+                  <span className="member-avatar">{getInitials(member.name)}</span>
                   {member.name} ({member.role})
                   <span className={onlineUserIds.includes(member.id) ? 'presence-dot online' : 'presence-dot'} />
                 </span>
@@ -163,7 +192,7 @@ export function BoardMain(props: BoardMainProps) {
             {sortedColumns.map((column, columnIndex) => (
               <div
                 key={column.id}
-                className="column"
+                className={`column column-tone-${(columnIndex % 4) + 1}`}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => {
                   if (!dragCard || !canWrite) {
@@ -214,7 +243,9 @@ export function BoardMain(props: BoardMainProps) {
                 <div className="cards">
                   {column.cards
                     .sort((a, b) => a.position - b.position)
-                    .map((card, index) => (
+                    .map((card, index) => {
+                      const dueBadge = getDueBadge(card.due_date);
+                      return (
                       <article
                         key={card.id}
                         className="card"
@@ -236,9 +267,23 @@ export function BoardMain(props: BoardMainProps) {
                           setDragCard(null);
                         }}
                       >
-                        <p>{card.title}</p>
+                        <div className="card-headline">
+                          <p>{card.title}</p>
+                          <button
+                            className="card-open"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onOpenCard(card.id);
+                            }}
+                          >
+                            Open
+                          </button>
+                        </div>
                         {card.assignee ? <small>Assignee: {card.assignee}</small> : null}
                         {card.due_date ? <small>Due: {toDateInputValue(card.due_date)}</small> : null}
+                        {dueBadge ? (
+                          <span className={`card-badge ${dueBadge.tone}`}>{dueBadge.label}</span>
+                        ) : null}
                         {canWrite ? (
                           <div className="touch-move-controls">
                             <button
@@ -275,7 +320,8 @@ export function BoardMain(props: BoardMainProps) {
                           </button>
                         ) : null}
                       </article>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             ))}
