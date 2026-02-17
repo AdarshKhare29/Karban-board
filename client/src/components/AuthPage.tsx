@@ -27,30 +27,43 @@ export function AuthPage(props: AuthPageProps) {
 
   return (
     <main className="auth-page">
-      <section className="auth-card">
-        <h1>Collaborative Kanban</h1>
-        <p>{authMode === 'login' ? 'Sign in to continue' : 'Create your account'}</p>
+      <section className="auth-shell">
+        <div className="auth-brand">
+          <p className="auth-badge">Realtime Workspace</p>
+          <h1>Collaborative Kanban</h1>
+          <p className="auth-copy">Ship faster with shared boards, live task updates, comments, and activity history in one place.</p>
+          <div className="auth-points">
+            <span>Live board sync</span>
+            <span>Role-based access</span>
+            <span>Activity timeline</span>
+          </div>
+        </div>
 
-        {authMode === 'register' ? (
-          <input value={authName} onChange={(event) => onAuthNameChange(event.target.value)} placeholder="Name" />
-        ) : null}
+        <div className="auth-card">
+          <h2>{authMode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+          <p>{authMode === 'login' ? 'Sign in to continue' : 'Set up your account to get started'}</p>
 
-        <input value={authEmail} onChange={(event) => onAuthEmailChange(event.target.value)} placeholder="Email" type="email" />
+          {authMode === 'register' ? (
+            <input value={authName} onChange={(event) => onAuthNameChange(event.target.value)} placeholder="Full name" />
+          ) : null}
 
-        <input
-          value={authPassword}
-          onChange={(event) => onAuthPasswordChange(event.target.value)}
-          placeholder="Password"
-          type="password"
-        />
+          <input value={authEmail} onChange={(event) => onAuthEmailChange(event.target.value)} placeholder="Email address" type="email" />
 
-        <button onClick={onSubmit}>{authMode === 'login' ? 'Login' : 'Register'}</button>
+          <input
+            value={authPassword}
+            onChange={(event) => onAuthPasswordChange(event.target.value)}
+            placeholder="Password"
+            type="password"
+          />
 
-        <button className="link-button" onClick={onToggleMode}>
-          {authMode === 'login' ? 'Need an account? Register' : 'Already have an account? Login'}
-        </button>
+          <button onClick={onSubmit}>{authMode === 'login' ? 'Login' : 'Register'}</button>
 
-        {error ? <p className="error">{error}</p> : null}
+          <button className="link-button" onClick={onToggleMode}>
+            {authMode === 'login' ? 'Need an account? Register' : 'Already have an account? Login'}
+          </button>
+
+          {error ? <p className="error">{error}</p> : null}
+        </div>
       </section>
     </main>
   );

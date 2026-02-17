@@ -63,8 +63,80 @@ body::after {
   padding: 24px;
 }
 
+.auth-shell {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(154, 188, 220, 0.34);
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 24px 55px rgba(8, 28, 53, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.auth-brand {
+  border-radius: 16px;
+  padding: 22px;
+  background: linear-gradient(145deg, #09203a 0%, #113157 52%, #12739e 100%);
+  color: #f3fbff;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.auth-badge {
+  margin: 0;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 4px 10px;
+}
+
+.auth-brand h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.auth-copy {
+  margin: 0;
+  color: rgba(231, 247, 255, 0.95);
+  line-height: 1.5;
+}
+
+.auth-points {
+  margin-top: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.auth-points span {
+  position: relative;
+  padding-left: 20px;
+  color: rgba(230, 246, 255, 0.95);
+  font-size: 0.92rem;
+}
+
+.auth-points span::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9ee7ff, #f3c37a);
+}
+
 .auth-card {
-  width: min(420px, 100%);
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -72,11 +144,13 @@ body::after {
   box-shadow: 0 16px 34px rgba(4, 24, 50, 0.12);
   backdrop-filter: blur(8px);
   display: grid;
-  gap: 10px;
+  gap: 11px;
 }
 
-.auth-card h1 {
+.auth-card h2 {
   margin: 0;
+  font-size: 1.42rem;
+  letter-spacing: 0.01em;
 }
 
 .auth-card p {
@@ -771,6 +845,10 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
   .page {
     grid-template-columns: 1fr;
   }
@@ -854,6 +932,17 @@ button:disabled {
 @media (max-width: 560px) {
   .auth-page {
     padding: 14px;
+  }
+
+  .auth-shell {
+    grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .auth-brand {
+    padding: 16px;
+    gap: 10px;
   }
 
   .sidebar {
