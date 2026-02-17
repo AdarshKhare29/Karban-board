@@ -798,6 +798,25 @@ body::after {
   cursor: pointer;
 }
 
+.icon-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .add-card {
   margin-top: 10px;
   display: grid;
@@ -878,6 +897,11 @@ body::after {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.modal-actions .delete {
+  margin-top: 0;
 }
 
 .comment-list {
@@ -900,6 +924,10 @@ body::after {
 
 .comment-item small {
   color: var(--muted);
+}
+
+.comment-item .delete {
+  margin-top: 6px;
 }
 
 .comment-form {

@@ -59,8 +59,10 @@ export function CardModal(props: CardModalProps) {
       <div className="modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>Card Details</h3>
-          <button className="modal-close" onClick={onClose}>
-            Close
+          <button className="modal-close icon-button" title="Close" aria-label="Close" onClick={onClose}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -95,8 +97,12 @@ export function CardModal(props: CardModalProps) {
                 <button onClick={onSave} disabled={savingCard || !cardTitle.trim()}>
                   {savingCard ? 'Saving...' : 'Save'}
                 </button>
-                <button className="delete" onClick={onDeleteCard}>
-                  Delete Card
+                <button className="delete icon-button" title="Delete card" aria-label="Delete card" onClick={onDeleteCard}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M7 6l1 14h8l1-14" />
+                  </svg>
                 </button>
               </div>
             ) : null}
@@ -113,8 +119,17 @@ export function CardModal(props: CardModalProps) {
                     {comment.author_name ?? comment.author_email ?? 'Unknown'} - {formatDateTime(comment.created_at)}
                   </small>
                   {(comment.user_id === user.id || activeBoard?.role === 'owner') && canWrite ? (
-                    <button className="delete" onClick={() => onDeleteComment(comment.id)}>
-                      Delete
+                    <button
+                      className="delete icon-button"
+                      title="Delete comment"
+                      aria-label="Delete comment"
+                      onClick={() => onDeleteComment(comment.id)}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M7 6l1 14h8l1-14" />
+                      </svg>
                     </button>
                   ) : null}
                 </article>

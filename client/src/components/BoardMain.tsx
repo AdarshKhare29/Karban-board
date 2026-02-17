@@ -220,11 +220,15 @@ export function BoardMain(props: BoardMainProps) {
                         autoFocus
                       />
                       <div className="column-actions">
-                        <button className="column-rename" onClick={() => saveRename(column.id, column.title)}>
-                          Save
+                        <button className="column-rename icon-button" title="Save column name" aria-label="Save column name" onClick={() => saveRename(column.id, column.title)}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
                         </button>
-                        <button className="column-rename cancel" onClick={cancelRename}>
-                          Cancel
+                        <button className="column-rename cancel icon-button" title="Cancel rename" aria-label="Cancel rename" onClick={cancelRename}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
                         </button>
                       </div>
                     </>
@@ -232,8 +236,16 @@ export function BoardMain(props: BoardMainProps) {
                     <>
                       <h3>{column.title}</h3>
                       {canWrite ? (
-                        <button className="column-rename" onClick={() => startRename(column.id, column.title)}>
-                          Rename
+                        <button
+                          className="column-rename icon-button"
+                          title="Rename column"
+                          aria-label="Rename column"
+                          onClick={() => startRename(column.id, column.title)}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 20h4l10-10-4-4L4 16v4z" />
+                            <path d="M14 6l4 4" />
+                          </svg>
                         </button>
                       ) : null}
                     </>
@@ -310,13 +322,19 @@ export function BoardMain(props: BoardMainProps) {
                         ) : null}
                         {canWrite ? (
                           <button
-                            className="delete"
+                            className="delete icon-button"
+                            title="Delete card"
+                            aria-label="Delete card"
                             onClick={(event) => {
                               event.stopPropagation();
                               onDeleteCard(card.id);
                             }}
                           >
-                            Delete
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M7 6l1 14h8l1-14" />
+                            </svg>
                           </button>
                         ) : null}
                       </article>
