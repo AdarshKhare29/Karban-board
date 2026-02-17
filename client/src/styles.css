@@ -159,6 +159,18 @@ body::after {
   color: var(--muted);
 }
 
+.auth-name-field {
+  max-height: 52px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.18s ease, opacity 0.14s ease;
+}
+
+.auth-name-field.hidden {
+  max-height: 0;
+  opacity: 0;
+}
+
 .link-button {
   background: transparent;
   border: 0;

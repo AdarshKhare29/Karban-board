@@ -43,9 +43,9 @@ export function AuthPage(props: AuthPageProps) {
           <h2>{authMode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
           <p>{authMode === 'login' ? 'Sign in to continue' : 'Set up your account to get started'}</p>
 
-          {authMode === 'register' ? (
+          <div className={authMode === 'register' ? 'auth-name-field' : 'auth-name-field hidden'}>
             <input value={authName} onChange={(event) => onAuthNameChange(event.target.value)} placeholder="Full name" />
-          ) : null}
+          </div>
 
           <input value={authEmail} onChange={(event) => onAuthEmailChange(event.target.value)} placeholder="Email address" type="email" />
 
