@@ -84,7 +84,6 @@ body::after {
   display: grid;
   align-content: start;
   gap: 14px;
-  min-height: 460px;
 }
 
 .auth-badge {
@@ -114,7 +113,7 @@ body::after {
 }
 
 .auth-points {
-  margin-top: 8px;
+  margin-top: 2px;
   display: grid;
   gap: 7px;
 }
@@ -166,6 +165,14 @@ body::after {
   color: var(--accent);
   padding: 0;
   text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+
+.link-button:hover {
+  box-shadow: none;
+  transform: none;
+  filter: none;
 }
 
 .page {
